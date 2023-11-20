@@ -1,0 +1,98 @@
+version: '3.8'
+services:
+  vote:
+    image: roxsross12/voting-app:vote-1.0.0
+    container_name: vote-app
+    environment:
+      - VIRTUAL_HOST=vote.0.0.0.0.sslip.io
+      - VIRTUAL_PORT=80
+
+    ports:
+      - 5001:80
+    depends_on:
+      - redis
+    networks:
+      - frontend
+      - backend
+
+  result:
+    image: roxsross12/voting-app:result-1.0.0
+    environment:
+      - VIRTUAL_HOST=result.0.0.0.0.sslip.io
+      - VIRTUAL_PORT=80
+    ports:
+      - 5002:80
+    container_name: result-app
+    depends_on:
+      - db
+    networks:
+      - frontend
+      - backend
+      
+  worker:
+    image: roxsross12/voting-app:worker-1.0.0
+    container_name: worker-app
+    depends_on:
+      - db
+      - redis
+    networks:
+      - backend
+
+  db:
+    image: postgres:15-alpine
+    container_name: db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data  
+    networks:
+      - backend
+
+  pgadmin:
+    image: dpage/pgadmin4:6.17
+    container_name: pgadmin
+    ports:
+      - 8080:80
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=example@example.cpm
+      - PGADMIN_DEFAULT_PASSWORD=secret123
+      - PGADMIN_LISTEN_PORT=80
+    depends_on:
+      - db
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - backend
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend
+
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - frontend
+
+volumes:
+  db-data:
+  redis-data:
+  pgadmin-data:
+
+
+networks:
+  frontend:
+  backend:
+
+
+
